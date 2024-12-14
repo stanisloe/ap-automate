@@ -1,0 +1,9 @@
+requests~=2.32.3
+selenium~=4.27.1
+aiohttp~=3.11.10
+pyppeteer~=2.0.0
+pandas~=2.2.3
+python-dotenv~=1.0.1
+playwright~=1.49.1
+pydantic~=2.10.3
+mnemonic~=0.21
