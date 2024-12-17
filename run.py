@@ -1,13 +1,16 @@
-import asyncio
-import os
-from dotenv import load_dotenv
 import argparse
+import asyncio
+import io
+import itertools
+import os
 
+import aiohttp
 import pandas as pd
+from dotenv import load_dotenv
 
+from crypt_manager import validate_key, decrypt
+from schemas import Profile, LaunchArgs
 from wallet_manager import WalletManager
-from open_profiles import map_profile_name_to_id
-from schemas import Profile
 
 load_dotenv()
 
@@ -15,61 +18,85 @@ ADSPOWER_URI = os.getenv("ADSPOWER_URI")
 ADSPOWER_API_KEY = os.getenv("ADSPOWER_API_KEY")
 
 
-async def launch(profile: Profile, semaphore: asyncio.Semaphore):
+async def launch_profile(metamask_id: str, profile: Profile, semaphore: asyncio.Semaphore):
     async with semaphore:
-        async with WalletManager(ADSPOWER_URI, ADSPOWER_API_KEY, profile) as wallet_manager:
-            await wallet_manager.create_wallet()
-            await asyncio.sleep(5)
+        try:
+            async with WalletManager(ADSPOWER_URI, ADSPOWER_API_KEY, metamask_id, profile) as wallet_manager:
+                await wallet_manager.create_wallet()
+                await asyncio.sleep(5)
+        except Exception as e:
+            print(e)
 
-
-async def main():
+def get_launch_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--profiles", type=str, help="Путь к csv файлу с аккаунтами")
-    parser.add_argument("--rounds", type=int, help="Количество кругов")
-    parser.add_argument("--threads", type=int, help="Максимальное количество одновременно работающих профилей")
+    parser.add_argument("-p", "--profiles", type=str, help="Путь к csv файлу с аккаунтами. Default: profiles.csv", default="profiles.csv")
+    parser.add_argument("-r", "--rounds", type=int, help="Количество кругов. Default: 1", default=1)
+    parser.add_argument("-t", "--threads", type=int, help="Максимальное количество одновременно работающих профилей. Default: 5", default=5)
+    parser.add_argument("-m", "--metamaskId", type=str, help="ID расширения metamask chrome-extension://{metamaskId}/home.html. Default: fbkaeljfgkiknokhhdiomplofllnoele", default="fbkaeljfgkiknokhhdiomplofllnoele")
+    parser.add_argument("-k", "--key", type=validate_key, help="Ключ шифрования, если файл зашифрован", default=None)
 
     args = parser.parse_args()
 
-    profiles_path = "profiles.csv"
-    if args.profiles is not None:
-        profiles_path = args.profiles
+    return LaunchArgs(profiles_path=args.profiles, rounds_count=args.rounds, threads_count=args.threads, metamask_id=args.metamaskId, encryption_key=args.key)
 
-    rounds = 1
-    if args.rounds is not None:
-        rounds = args.rounds
-
-    threads = 3
-    if args.threads is not None:
-        threads = args.threads
-    semaphore = asyncio.Semaphore(threads)
-
-    if not os.path.exists(profiles_path) or not os.path.isfile(profiles_path):
-        raise Exception("Couldn't find input file ", profiles_path)
-
-    userdata_df = pd.read_csv(profiles_path)
-
-    profile_ids_map = map_profile_name_to_id()
+async def map_profile_name_to_id():
+    PAGE_SIZE = 100
     profiles = []
+    result = {}
+
+    for page in itertools.count(start=1):
+        params = {"page_size": PAGE_SIZE, "page": page}
+        async with aiohttp.request("GET", ADSPOWER_URI + "/api/v1/user/list", params=params) as response:
+            response_json = await response.json()
+
+        current_page = response_json["data"]["list"]
+
+        profiles.extend(current_page)
+        if len(current_page) < PAGE_SIZE:
+            break
+    for profile in profiles:
+        result[profile["name"]] = profile["user_id"]
+    return result
+
+
+async def main():
+    launch_args = get_launch_args()
+
+    if not os.path.exists(launch_args.profiles_path) or not os.path.isfile(launch_args.profiles_path):
+        raise Exception("Couldn't find input file ", launch_args.profiles_path)
+
+    if launch_args.encryption_key is not None:
+        decrypted_file_contents = decrypt(launch_args.encryption_key, launch_args.profiles_path)
+        userdata_df = pd.read_csv(io.BytesIO(decrypted_file_contents))
+    else:
+        userdata_df = pd.read_csv(launch_args.profiles_path)
+
+    profile_ids_map = await map_profile_name_to_id()
+
+    profiles = []
+
     for _, row in userdata_df.iterrows():
         profile_name = row.get("profile")
+
         if profile_name is None:
             raise Exception("Invalid profile", row)
+
         profile_name = str(profile_name)
         profile_id = profile_ids_map.get(profile_name)
+
         if profile_id is None:
-            raise Exception("Profile number not found")
+            raise Exception("Profile not found ", row)
+
         profiles.append(Profile(profile=profile_name, id=profile_id, seed = row.get("seed"), password=row.get("password")))
 
-    for _ in range(rounds):
+    semaphore = asyncio.Semaphore(launch_args.threads_count)
+    for _ in range(launch_args.rounds_count):
         tasks = []
         for profile in profiles:
-            tasks.append(asyncio.create_task(launch(profile, semaphore)))
+            tasks.append(asyncio.create_task(launch_profile(launch_args.metamask_id, profile, semaphore)))
 
         for task in tasks:
-            try:
-                await task
-            except Exception as e:
-                print(e)
+            await task
 
 if __name__ == "__main__":
     asyncio.run(main())

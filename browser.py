@@ -1,7 +1,5 @@
-import asyncio
-
 import aiohttp
-from playwright import async_api
+import playwright.async_api
 
 
 class AdspowerPlaywright:
@@ -12,13 +10,13 @@ class AdspowerPlaywright:
 
     async def __aenter__(self):
         uri = await self._open_browser()
-        self._pw = await async_api.async_playwright().start()
+        self._playwright = playwright.async_api.async_playwright()
+        self._pw = await self._playwright.__aenter__()
         return await self._pw.chromium.connect_over_cdp(uri)
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        # print("a")
         await self._close_browser()
-        await self._pw.stop()
+        await self._playwright.__aexit__(exc_type, exc_val, exc_tb)
 
 
 

@@ -2,4 +2,5 @@
 .venv/
 .idea/
 __pycache__/
-profiles.csv
+*.csv
+*csv.bin
