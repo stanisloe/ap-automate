@@ -1,3 +1,5 @@
+import asyncio
+
 import aiohttp
 import playwright.async_api
 
@@ -36,7 +38,5 @@ class AdspowerPlaywright:
         url = f"{self.uri}/api/v1/browser/stop"
         headers = {"Authorization": f"Bearer {self.api_key}"}
         params = {"user_id": self.profile_id}
-        async with aiohttp.request("GET", url, params=params, headers=headers) as response:
-            json_response = await response.json()
-        if json_response["code"] != 0:
-            raise Exception(json_response)
+
+        asyncio.create_task(aiohttp.request("GET", url, params=params, headers=headers).__aenter__())

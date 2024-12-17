@@ -3,12 +3,13 @@ import asyncio
 import io
 import itertools
 import os
+from getpass import getpass
 
 import aiohttp
 import pandas as pd
 from dotenv import load_dotenv
 
-from crypt_manager import validate_key, decrypt
+from crypt_manager import decrypt
 from schemas import Profile, LaunchArgs
 from wallet_manager import WalletManager
 
@@ -33,11 +34,10 @@ def get_launch_args():
     parser.add_argument("-r", "--rounds", type=int, help="Количество кругов. Default: 1", default=1)
     parser.add_argument("-t", "--threads", type=int, help="Максимальное количество одновременно работающих профилей. Default: 5", default=5)
     parser.add_argument("-m", "--metamaskId", type=str, help="ID расширения metamask chrome-extension://{metamaskId}/home.html. Default: fbkaeljfgkiknokhhdiomplofllnoele", default="fbkaeljfgkiknokhhdiomplofllnoele")
-    parser.add_argument("-k", "--key", type=validate_key, help="Ключ шифрования, если файл зашифрован", default=None)
 
     args = parser.parse_args()
 
-    return LaunchArgs(profiles_path=args.profiles, rounds_count=args.rounds, threads_count=args.threads, metamask_id=args.metamaskId, encryption_key=args.key)
+    return LaunchArgs(profiles_path=args.profiles, rounds_count=args.rounds, threads_count=args.threads, metamask_id=args.metamaskId)
 
 async def map_profile_name_to_id():
     PAGE_SIZE = 100
@@ -65,8 +65,11 @@ async def main():
     if not os.path.exists(launch_args.profiles_path) or not os.path.isfile(launch_args.profiles_path):
         raise Exception("Couldn't find input file ", launch_args.profiles_path)
 
-    if launch_args.encryption_key is not None:
-        decrypted_file_contents = decrypt(launch_args.encryption_key, launch_args.profiles_path)
+    file_ext = os.path.splitext(launch_args.profiles_path)[-1]
+
+    if file_ext == ".bin":
+        encryption_key = getpass("Enter encryption key:")
+        decrypted_file_contents = decrypt(encryption_key, launch_args.profiles_path)
         userdata_df = pd.read_csv(io.BytesIO(decrypted_file_contents))
     else:
         userdata_df = pd.read_csv(launch_args.profiles_path)

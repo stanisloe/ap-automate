@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
 
 class Profile(BaseModel):
     id: str
@@ -11,4 +12,3 @@ class LaunchArgs(BaseModel):
     rounds_count: int
     threads_count: int
     metamask_id: str
-    encryption_key: bytes | None = None
