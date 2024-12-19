@@ -54,6 +54,7 @@ async def map_profile_name_to_id():
         profiles.extend(current_page)
         if len(current_page) < PAGE_SIZE:
             break
+        await asyncio.sleep(1)
     for profile in profiles:
         result[profile["name"]] = profile["user_id"]
     return result
