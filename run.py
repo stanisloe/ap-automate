@@ -32,7 +32,7 @@ def get_launch_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--profiles", type=str, help="Путь к csv файлу с аккаунтами. Default: profiles.csv", default="profiles.csv")
     parser.add_argument("-r", "--rounds", type=int, help="Количество кругов. Default: 1", default=1)
-    parser.add_argument("-t", "--threads", type=int, help="Максимальное количество одновременно работающих профилей. Default: 5", default=5)
+    parser.add_argument("-t", "--threads", type=int, help="Максимальное количество одновременно работающих профилей. Default: 5", default=2)
     parser.add_argument("-m", "--metamaskId", type=str, help="ID расширения metamask chrome-extension://{metamaskId}/home.html. Default: fbkaeljfgkiknokhhdiomplofllnoele", default="fbkaeljfgkiknokhhdiomplofllnoele")
 
     args = parser.parse_args()

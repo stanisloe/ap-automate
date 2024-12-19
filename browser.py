@@ -39,4 +39,5 @@ class AdspowerPlaywright:
         headers = {"Authorization": f"Bearer {self.api_key}"}
         params = {"user_id": self.profile_id}
 
-        asyncio.create_task(aiohttp.request("GET", url, params=params, headers=headers).__aenter__())
+        async with aiohttp.request("GET", url, params=params, headers=headers):
+            pass
