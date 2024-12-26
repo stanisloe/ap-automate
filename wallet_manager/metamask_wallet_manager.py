@@ -6,7 +6,7 @@ from browser import AdspowerPlaywright
 from schemas import Profile
 
 
-class WalletManager:
+class MetamaskWalletManager:
     POSSIBLE_SEED_PHRASES_COUNT = [12, 15, 18, 21, 24]
 
     def __init__(self, adspower_uri: str, adspower_api_key: str, metamask_id: str, profile: Profile):
