@@ -6,7 +6,7 @@ from getpass import getpass
 import pandas as pd
 from dotenv import load_dotenv
 
-from cryptor.crypt_manager import decrypt
+from cryptor import decrypt
 from schemas import Profile, Extensions
 from tools import map_profile_name_to_id, get_launch_args
 from wallet_manager.metamask_wallet_manager import MetamaskWalletManager
