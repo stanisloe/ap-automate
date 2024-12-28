@@ -13,7 +13,9 @@ class PhantomWalletManager:
         self.adspower_api_key = adspower_api_key
         self.adspower_uri = adspower_uri
         self.profile = profile
-        self.extension_uri = f"chrome-extension://{extension_id}/popup.html"
+        self.extension_uri = f"chrome-extension://{extension_id}"
+        self.popup_uri = f"{self.extension_uri}/popup.html"
+        self.onboarding_uri = f"{self.extension_uri}/onboarding.html"
 
     async def __aenter__(self):
         self._pw = AdspowerPlaywright(self.adspower_uri, self.adspower_api_key, self.profile.id)
@@ -32,22 +34,20 @@ class PhantomWalletManager:
                 await page_to_close.close()
 
     async def _is_signed_in(self):
-        await self._page.goto(self.extension_uri, wait_until="domcontentloaded")
-        await asyncio.sleep(2)
+        await self._page.goto(self.popup_uri, wait_until="domcontentloaded")
+        await asyncio.sleep(5)
         self._page = self._context.pages[0]
         try:
-            await self._page.wait_for_url(self.extension_uri, timeout=2)
-        except playwright._impl._errors.TimeoutError:
+            await self._page.wait_for_url(self.onboarding_uri, timeout=2)
             return False
-        return True
+        except playwright._impl._errors.TimeoutError:
+            return True
 
 
     async def create_wallet(self):
         await self._open_new_page_close_others()
-
         if await self._is_signed_in():
             raise Exception(f"{self.profile.profile} already signed in")
-
         await self._page.get_by_text("I already have a wallet").first.click(timeout=10000)
 
         await self._page.get_by_text("Import Secret Recovery Phrase").first.click(timeout=10000)
@@ -70,10 +70,13 @@ class PhantomWalletManager:
         await self._page.get_by_test_id("onboarding-form-confirm-password-input").fill(self.profile.password, timeout=10000)
 
         await self._page.get_by_test_id("onboarding-form-terms-of-service-checkbox").click(timeout=10000)
-        await self._page.get_by_test_id("onboarding-form-submit-button").click(timeout=10000)
 
-        await self._page.get_by_test_id("onboarding-form-submit-button").click(timeout=10000)
-        await asyncio.sleep(5)
+        await self._page.get_by_text("Continue").click(timeout=10000)
+
+        await self._page.get_by_text("Get Started").wait_for(timeout=10000)
+
+        await self._page.goto(self.popup_uri, wait_until="domcontentloaded")
+        await self._page.get_by_text("Solana").wait_for(timeout=10000)
 
 # async def main():
 #     profile = Profile(id="krn58kj", profile="a", password="12345678", seed="leopard chicken fluid fiscal aerobic noise report couple juice private kite code")

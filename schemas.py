@@ -16,13 +16,11 @@ class Extensions(Enum):
 
 
 class LaunchArgs(BaseModel):
-    profiles: str = "./profiles.csv"
-    rounds: int = 1
-    threads: int = 2
+    file: str
     extension: Extensions
-
-    metamask_id: str = "fbkaeljfgkiknokhhdiomplofllnoele"
-    phantom_id: str = "bfnaelmomeimhlpmgjnjophhpkkoljpa"
+    ext_id: str
+    rounds: int = 1
+    threads: int = 1
 
     model_config = {
         "extra": "forbid",

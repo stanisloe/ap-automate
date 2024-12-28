@@ -23,7 +23,7 @@ async def launch_profile(wallet_manager, extension_id: str, profile: Profile, se
         try:
             async with wallet_manager(ADSPOWER_URI, ADSPOWER_API_KEY, extension_id, profile) as wallet_manager:
                 await wallet_manager.create_wallet()
-                await asyncio.sleep(5)
+            print(profile.profile, "success")
         except Exception as e:
             print(e)
 
@@ -31,17 +31,17 @@ async def launch_profile(wallet_manager, extension_id: str, profile: Profile, se
 async def main():
     launch_args = get_launch_args()
 
-    if not os.path.exists(launch_args.profiles) or not os.path.isfile(launch_args.profiles):
-        raise Exception("Couldn't find input file ", launch_args.profiles)
+    if not os.path.exists(launch_args.file) or not os.path.isfile(launch_args.file):
+        raise Exception("Couldn't find input file ", launch_args.file)
 
-    file_ext = os.path.splitext(launch_args.profiles)[-1]
+    file_ext = os.path.splitext(launch_args.file)[-1]
 
     if file_ext == ".bin":
-        encryption_key = getpass("Enter encryption key:")
-        decrypted_file_contents = decrypt(encryption_key, launch_args.profiles)
+        password = getpass("Enter password:")
+        decrypted_file_contents = decrypt(password, launch_args.file)
         userdata_df = pd.read_csv(io.BytesIO(decrypted_file_contents))
     else:
-        userdata_df = pd.read_csv(launch_args.profiles)
+        userdata_df = pd.read_csv(launch_args.file)
 
     profile_ids_map = await map_profile_name_to_id()
 
@@ -66,13 +66,11 @@ async def main():
     for _ in range(launch_args.rounds):
         if launch_args.extension == Extensions.metamask.value:
             wallet_manager = MetamaskWalletManager
-            extension_id = launch_args.metamask_id
-
         elif launch_args.extension == Extensions.phantom.value:
             wallet_manager = PhantomWalletManager
-            extension_id = launch_args.phantom_id
         else:
             raise Exception("Unsupported extension")
+        extension_id = launch_args.ext_id
 
         tasks = []
         for profile in profiles:

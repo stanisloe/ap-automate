@@ -33,13 +33,11 @@ async def map_profile_name_to_id():
 
 def get_launch_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-p", "--profiles", type=str, help="Путь к csv файлу с аккаунтами. Default: profiles.csv")
+    parser.add_argument("-f", "--file", type=str, help="Путь к csv файлу с аккаунтами", required=True)
+    parser.add_argument("-e", "--extension", type=str, help="Выбор используемого расширения. Допустимые значения: metamask, phantom", required=True)
+    parser.add_argument("--extId", type=str, help="ID расширения chrome-extension://{extId}/home.html", required=True)
     parser.add_argument("-r", "--rounds", type=int, help="Количество кругов. Default: 1")
-    parser.add_argument("-t", "--threads", type=int, help="Максимальное количество одновременно работающих профилей. Default: 5")
-    parser.add_argument("-e", "--extension", type=str, help="Выбор используемого расширения. Допустимые значения: metamask, phantom")
-    parser.add_argument("--metamaskId", type=str, help="ID расширения metamask chrome-extension://{metamaskId}/home.html. Default: fbkaeljfgkiknokhhdiomplofllnoele")
-    parser.add_argument("--phantomId", type=str, help="ID расширения phantom chrome-extension://{phantomId}/popup.html. Default: bfnaelmomeimhlpmgjnjophhpkkoljpa")
-
+    parser.add_argument("-t", "--threads", type=int, help="Максимальное количество одновременно работающих профилей. Default: 1")
     args = parser.parse_args().__dict__
     args = {key: value for key, value in args.items() if value is not None}
     return LaunchArgs(**args)
