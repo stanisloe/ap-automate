@@ -30,6 +30,7 @@ async def launch_profile(wallet_manager, extension_id: str, profile: Profile, se
 
 async def main():
     launch_args = get_launch_args()
+    id_filter = launch_args.id_filter
 
     if not os.path.exists(launch_args.file) or not os.path.isfile(launch_args.file):
         raise Exception("Couldn't find input file ", launch_args.file)
@@ -54,6 +55,12 @@ async def main():
             raise Exception("Invalid profile", row)
 
         profile_name = str(profile_name)
+
+        # idFilter matches CSV profile values; when set, run only selected names.
+        if id_filter is not None and profile_name not in id_filter:
+            print("skipping", profile_name)
+            continue
+
         profile_id = profile_ids_map.get(profile_name)
 
         if profile_id is None:
@@ -61,7 +68,6 @@ async def main():
 
         profiles.append(
             Profile(profile=profile_name, id=profile_id, seed=row.get("seed"), password=row.get("password")))
-
     semaphore = asyncio.Semaphore(launch_args.threads)
     for _ in range(launch_args.rounds):
         if launch_args.extension == Extensions.metamask.value:

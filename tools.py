@@ -36,6 +36,11 @@ def get_launch_args():
     parser.add_argument("-f", "--file", type=str, help="Путь к csv файлу с аккаунтами", required=True)
     parser.add_argument("-e", "--extension", type=str, help="Выбор используемого расширения. Допустимые значения: metamask, phantom", required=True)
     parser.add_argument("--extId", type=str, help="ID расширения chrome-extension://{extId}/home.html", required=True)
+    parser.add_argument(
+        "--idFilter",
+        type=str,
+        help="Фильтр по profile из CSV: отдельные значения и диапазоны через запятую, например 1,3,10-20"
+    )
     parser.add_argument("-r", "--rounds", type=int, help="Количество кругов. Default: 1")
     parser.add_argument("-t", "--threads", type=int, help="Максимальное количество одновременно работающих профилей. Default: 1")
     args = parser.parse_args().__dict__
